@@ -1,0 +1,160 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Resit.Views.SettingsWindow"
+        Icon="/Resit.ico"
+        Title="Settings" Width="760" Height="600" MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource PanelBackground}">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <StackPanel Margin="28,20,28,12">
+            <TextBlock x:Name="TitleText" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+            <TextBlock x:Name="SubtitleText" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <TabControl Grid.Row="1" TabStripPlacement="Left" Margin="20,0,20,0">
+            <TabItem Header="Performance" FontSize="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Preset" Classes="section" Margin="0,4,0,8" />
+                        <ComboBox x:Name="PerfPresetBox" HorizontalAlignment="Stretch" SelectionChanged="OnPerfPreset" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="CPU cores · " Classes="section" />
+                            <TextBlock x:Name="CoresValue" Classes="section" Foreground="{StaticResource TextPrimary}" />
+                        </StackPanel>
+                        <Slider x:Name="CoresSlider" Minimum="1" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="OnPerfSliderChanged" />
+                        <TextBlock x:Name="CoresHint" Classes="hint" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Memory · " Classes="section" />
+                            <TextBlock x:Name="RamValue" Classes="section" Foreground="{StaticResource TextPrimary}" />
+                        </StackPanel>
+                        <Slider x:Name="RamSlider" Minimum="2048" IsSnapToTickEnabled="True" TickFrequency="512" ValueChanged="OnPerfSliderChanged" />
+                        <TextBlock x:Name="RamHint" Classes="hint" />
+
+                        <TextBlock Text="Priority" Classes="section" />
+                        <CheckBox x:Name="HighPriorityBox" Content="Run the emulator at high priority" />
+                        <TextBlock x:Name="PriorityHint" Classes="hint" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Display" FontSize="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Resolution" Classes="section" Margin="0,4,0,8" />
+                        <ComboBox x:Name="ResolutionBox" HorizontalAlignment="Stretch" SelectionChanged="OnResolutionPreset" />
+                        <Grid ColumnDefinitions="*,12,*,12,*" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Width" Classes="hint" Margin="0,0,0,4" />
+                                <TextBox x:Name="WidthBox" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Height" Classes="hint" Margin="0,0,0,4" />
+                                <TextBox x:Name="HeightBox" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="DPI" Classes="hint" Margin="0,0,0,4" />
+                                <TextBox x:Name="DpiBox" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="Higher resolutions look sharper and cost more GPU time." Classes="hint" />
+
+                        <TextBlock Text="Refresh rate" Classes="section" />
+                        <ComboBox x:Name="RefreshBox" HorizontalAlignment="Stretch" />
+
+                        <TextBlock Text="Window" Classes="section" />
+                        <CheckBox x:Name="AutoRotateBox" Content="Rotate the window to match the app (portrait or landscape)" />
+                        <CheckBox x:Name="FullscreenBox" Content="Start in fullscreen" Margin="0,8,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Graphics" FontSize="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Renderer" Classes="section" Margin="0,4,0,8" />
+                        <ComboBox x:Name="RendererBox" HorizontalAlignment="Stretch" />
+                        <TextBlock x:Name="GpuHint" Classes="hint" />
+
+                        <TextBlock Text="Vulkan" Classes="section" />
+                        <CheckBox x:Name="VulkanBox" Content="Enable Vulkan for games that use it" />
+                        <TextBlock Text="Turn off if a game shows a black screen or graphics glitches." Classes="hint" />
+
+                        <TextBlock Text="Video decoding" Classes="section" />
+                        <ComboBox x:Name="VideoBox" HorizontalAlignment="Stretch" />
+                        <TextBlock Text="Try Software if a video app shows &quot;Playback failed&quot; or a black video." Classes="hint" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Device" FontSize="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Display name" Classes="section" Margin="0,4,0,8" />
+                        <TextBox x:Name="DisplayNameBox" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Storage · " Classes="section" />
+                            <TextBlock x:Name="StorageValue" Classes="section" Foreground="{StaticResource TextPrimary}" />
+                        </StackPanel>
+                        <Slider x:Name="StorageSlider" Minimum="4" Maximum="256" IsSnapToTickEnabled="True" TickFrequency="4" ValueChanged="OnStorageChanged" />
+                        <TextBlock Text="Space for apps and games. Storage can grow but not shrink without a data wipe." Classes="hint" />
+
+                        <TextBlock Text="Ads" Classes="section" />
+                        <CheckBox x:Name="BlockAdsBox" Content="Block ads and trackers in all apps" />
+                        <TextBlock Classes="hint"
+                                   Text="Uses AdGuard's free ad-blocking DNS for the whole Android system. Turn it off if an app stops loading or asks you to disable your ad blocker." />
+
+                        <TextBlock Text="System" Classes="section" />
+                        <TextBlock x:Name="ImageText" Foreground="{StaticResource TextPrimary}" />
+                        <TextBlock x:Name="PlayStoreText" Classes="hint" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Audio" FontSize="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Sound" Classes="section" Margin="0,4,0,8" />
+                        <CheckBox x:Name="AudioBox" Content="Enable sound" />
+
+                        <TextBlock Text="Output device" Classes="section" />
+                        <ComboBox x:Name="OutputBox" HorizontalAlignment="Stretch" />
+                        <TextBlock Text="Where this instance plays its sound. You can also switch it while playing, from the headphones button in the sidebar." Classes="hint" />
+
+                        <TextBlock Text="Microphone" Classes="section" />
+                        <CheckBox x:Name="MicrophoneBox" Content="Enable microphone" />
+                        <TextBlock Classes="hint"
+                                   Text="Only turn on for apps that need voice. With Bluetooth headphones, your PC switches them to call mode whenever Android uses the mic, and the normal sound cuts out. Takes effect the next time the instance starts." />
+                        <TextBlock Text="Input device" Classes="section" />
+                        <ComboBox x:Name="InputBox" HorizontalAlignment="Stretch" IsEnabled="{Binding #MicrophoneBox.IsChecked}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Advanced" FontSize="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Startup" Classes="section" Margin="0,4,0,8" />
+                        <CheckBox x:Name="QuickBootBox" Content="Quick Boot (resume where you left off)" />
+                        <TextBlock Text="Saves a snapshot when you close the instance so the next start takes seconds." Classes="hint" />
+
+                        <TextBlock Text="Game controls" Classes="section" />
+                        <CheckBox x:Name="KeyHintsBox" Content="Show key labels on screen while playing" />
+                        <TextBlock x:Name="KeyHintsHint" Classes="hint" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="2" BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="28,14">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10">
+                    <Button Content="Cancel" Theme="{StaticResource SubtleButton}" IsCancel="True" Click="OnCancel" />
+                    <Button Content="Save" Theme="{StaticResource AccentButton}" IsDefault="True" Click="OnSave" />
+                </StackPanel>
+                <TextBlock x:Name="FooterText" Foreground="{StaticResource Warning}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

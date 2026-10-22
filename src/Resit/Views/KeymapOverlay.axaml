@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Resit.Views.KeymapOverlay"
+        WindowDecorations="None" Background="Transparent" TransparencyLevelHint="Transparent"
+        ShowInTaskbar="False" ShowActivated="False" CanResize="False"
+        Title="Resit controls">
+    <Grid>
+        <!-- Without a compositor (some Linux desktops) the window cannot be see-through, so
+             the editor shows a screenshot of the game instead. -->
+        <Image x:Name="ScreenImage" Stretch="Fill" IsVisible="False" />
+
+        <!-- Darkens the screen while editing and catches clicks on empty space. -->
+        <Border x:Name="EditTint" Background="#80000000" IsVisible="False" PointerPressed="OnTintPressed" />
+
+        <Canvas x:Name="ControlsCanvas" ClipToBounds="True" />
+
+        <!-- Editor toolbar -->
+        <Border x:Name="EditBar" IsVisible="False" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,12,0,0"
+                Background="{StaticResource OverlayPanel}" CornerRadius="10" Padding="6">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button Theme="{StaticResource SubtleButton}" Padding="12,7" Click="OnAddTap" ToolTip.Tip="A key that taps one spot" AutomationProperties.Name="Add tap">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconAdd}" Width="14" Height="14" />
+                            <TextBlock Text="Tap" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource SubtleButton}" Padding="12,7" Click="OnAddJoystick" ToolTip.Tip="WASD movement joystick" AutomationProperties.Name="Add joystick">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Data="{StaticResource IconGamepad}" Width="14" Height="14" />
+                            <TextBlock Text="Joystick" />
+                        </StackPanel>
+                    </Button>
+                    <Button Theme="{StaticResource SubtleButton}" Padding="12,7" Click="OnClear" Content="Clear all" />
+                    <Rectangle Width="1" Classes="divider" Margin="6,4" />
+                    <Button Theme="{StaticResource SubtleButton}" Padding="12,7" Click="OnCancel" Content="Cancel" />
+                    <Button Theme="{StaticResource AccentButton}" Padding="14,7" Click="OnSave" Content="Save" />
+                </StackPanel>
+                <TextBlock x:Name="EditHint" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="6,6,6,2" TextWrapping="Wrap" MaxWidth="460" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

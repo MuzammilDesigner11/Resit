@@ -1,0 +1,59 @@
+<Window x:Class="Resit.Views.PlayerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Resit.Views"
+        Icon="/Resit.ico"
+        Title="Resit" Width="560" Height="1000" MinWidth="320" MinHeight="320"
+        Background="#FF000000">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Screen -->
+        <Grid x:Name="DisplayArea" Background="#FF000000" SizeChanged="OnDisplayAreaSizeChanged">
+            <!-- Hidden until Android has booted; the progress panel shows meanwhile. -->
+            <views:EmulatorHost x:Name="Host" HorizontalAlignment="Center" VerticalAlignment="Center" Width="1" Height="1" Visibility="Hidden" />
+
+            <StackPanel x:Name="LoadingPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Width="320">
+                <Image Source="{StaticResource LogoImage}" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,20" />
+
+                <TextBlock x:Name="LoadingText" Text="Starting…" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
+                <ProgressBar x:Name="LoadingBar" Height="6" Margin="0,14,0,8" Maximum="100" Value="2" />
+                <DockPanel>
+                    <TextBlock x:Name="LoadingPercent" DockPanel.Dock="Right" Foreground="{StaticResource TextSecondary}" FontSize="12" />
+                    <TextBlock x:Name="LoadingDetail" Foreground="{StaticResource TextSecondary}" FontSize="12" TextWrapping="Wrap" />
+                </DockPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Side toolbar -->
+        <Border x:Name="Toolbar" Grid.Column="1" Background="{StaticResource PanelBackground}" BorderBrush="{StaticResource Divider}" BorderThickness="1,0,0,0">
+            <DockPanel Margin="6,8">
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Settings" AutomationProperties.Name="Settings" Click="OnSettings" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7E8;" ToolTip="Shut down" AutomationProperties.Name="Shut down" Click="OnPower" Foreground="{StaticResource Danger}" />
+                </StackPanel>
+                <StackPanel x:Name="DeviceButtons">
+                    <Button Style="{StaticResource IconButton}" Content="&#xE72B;" ToolTip="Back" AutomationProperties.Name="Back" Click="OnBack" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE80F;" ToolTip="Home" AutomationProperties.Name="Home" Click="OnHome" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7C4;" ToolTip="Recent apps" AutomationProperties.Name="Recent apps" Click="OnRecents" />
+                    <Rectangle Height="1" Fill="{StaticResource Divider}" Margin="6,8" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE995;" ToolTip="Volume up" AutomationProperties.Name="Volume up" Click="OnVolumeUp" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE993;" ToolTip="Volume down" AutomationProperties.Name="Volume down" Click="OnVolumeDown" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7F5;" ToolTip="Sound output device" AutomationProperties.Name="Sound output device" Click="OnSoundOutput" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE7AD;" ToolTip="Rotate" AutomationProperties.Name="Rotate" Click="OnRotate" />
+                    <Rectangle Height="1" Fill="{StaticResource Divider}" Margin="6,8" />
+                    <ToggleButton x:Name="ControlsToggle" Style="{StaticResource IconToggle}" Content="&#xE7FC;" ToolTip="Edit game controls" AutomationProperties.Name="Edit game controls" Click="OnEditControls" />
+                    <ToggleButton x:Name="KeymapToggle" Style="{StaticResource IconToggle}" Content="&#xE765;" ToolTip="Game controls on/off" AutomationProperties.Name="Game controls on/off" Click="OnKeymapToggle" IsChecked="True" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE722;" ToolTip="Screenshot (saved to Pictures\Resit)" AutomationProperties.Name="Screenshot" Click="OnScreenshot" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE896;" ToolTip="Install APK" AutomationProperties.Name="Install APK" Click="OnInstallApk" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE740;" ToolTip="Fullscreen (F11)" AutomationProperties.Name="Fullscreen" Click="OnFullscreen" />
+                    <Button Style="{StaticResource IconButton}" Content="&#xE712;" ToolTip="More emulator controls (location, battery, camera…)" AutomationProperties.Name="More emulator controls" Click="OnExtendedControls" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

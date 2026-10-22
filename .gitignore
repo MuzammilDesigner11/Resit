@@ -1,0 +1,10 @@
+# Machine-specific paths written by setup.ps1
+resit.local.json
+
+# Build output
+bin/
+obj/
+dist/
+*.user
+.vs/
+dist-next/

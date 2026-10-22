@@ -1,0 +1,169 @@
+<Window x:Class="Resit.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/Resit.ico"
+        Title="Settings" Width="760" Height="600" MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource PanelBackground}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="28,20,28,12">
+            <TextBlock x:Name="TitleText" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+            <TextBlock x:Name="SubtitleText" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
+        </StackPanel>
+
+        <TabControl Grid.Row="1" TabStripPlacement="Left" Margin="20,0,20,0" BorderThickness="0" Background="Transparent">
+            <TabItem Header="Performance" Padding="14,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Preset" Style="{StaticResource SectionHeader}" Margin="0,4,0,8" />
+                        <ComboBox x:Name="PerfPresetBox" SelectionChanged="OnPerfPreset" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}">
+                            <Run Text="CPU cores · " /><Run x:Name="CoresValue" Foreground="{StaticResource TextPrimary}" />
+                        </TextBlock>
+                        <Slider x:Name="CoresSlider" Minimum="1" IsSnapToTickEnabled="True" TickFrequency="1" ValueChanged="OnCoresChanged" />
+                        <TextBlock x:Name="CoresHint" Style="{StaticResource Hint}" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}">
+                            <Run Text="Memory · " /><Run x:Name="RamValue" Foreground="{StaticResource TextPrimary}" />
+                        </TextBlock>
+                        <Slider x:Name="RamSlider" Minimum="2048" IsSnapToTickEnabled="True" TickFrequency="512" ValueChanged="OnRamChanged" />
+                        <TextBlock x:Name="RamHint" Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Priority" Style="{StaticResource SectionHeader}" />
+                        <CheckBox x:Name="HighPriorityBox" Content="Run the emulator at high priority" />
+                        <TextBlock Text="Windows schedules the emulator ahead of background apps." Style="{StaticResource Hint}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Display" Padding="14,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Resolution" Style="{StaticResource SectionHeader}" Margin="0,4,0,8" />
+                        <ComboBox x:Name="ResolutionBox" SelectionChanged="OnResolutionPreset" />
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Width" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                                <TextBox x:Name="WidthBox" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Height" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                                <TextBox x:Name="HeightBox" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="DPI" Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                                <TextBox x:Name="DpiBox" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="Higher resolutions look sharper and cost more GPU time." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Refresh rate" Style="{StaticResource SectionHeader}" />
+                        <ComboBox x:Name="RefreshBox" />
+
+                        <TextBlock Text="Window" Style="{StaticResource SectionHeader}" />
+                        <CheckBox x:Name="AutoRotateBox" Content="Rotate the window to match the app (portrait or landscape)" />
+                        <CheckBox x:Name="FullscreenBox" Content="Start in fullscreen" Margin="0,8,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Graphics" Padding="14,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Renderer" Style="{StaticResource SectionHeader}" Margin="0,4,0,8" />
+                        <ComboBox x:Name="RendererBox" />
+                        <TextBlock x:Name="GpuHint" Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Vulkan" Style="{StaticResource SectionHeader}" />
+                        <CheckBox x:Name="VulkanBox" Content="Enable Vulkan for games that use it" />
+                        <TextBlock Text="Turn off if a game shows a black screen or graphics glitches." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Video decoding" Style="{StaticResource SectionHeader}" />
+                        <ComboBox x:Name="VideoBox" />
+                        <TextBlock Text="Try Software if a video app shows &quot;Playback failed&quot; or a black video." Style="{StaticResource Hint}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Device" Padding="14,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Display name" Style="{StaticResource SectionHeader}" Margin="0,4,0,8" />
+                        <TextBox x:Name="DisplayNameBox" />
+
+                        <TextBlock Style="{StaticResource SectionHeader}">
+                            <Run Text="Storage · " /><Run x:Name="StorageValue" Foreground="{StaticResource TextPrimary}" />
+                        </TextBlock>
+                        <Slider x:Name="StorageSlider" Minimum="4" Maximum="256" IsSnapToTickEnabled="True" TickFrequency="4" ValueChanged="OnStorageChanged" />
+                        <TextBlock Text="Space for apps and games. Storage can grow but not shrink without a data wipe." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Ads" Style="{StaticResource SectionHeader}" />
+                        <CheckBox x:Name="BlockAdsBox" Content="Block ads and trackers in all apps" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Uses AdGuard's free ad-blocking DNS for the whole Android system. Turn it off if an app stops loading or asks you to disable your ad blocker." />
+
+                        <TextBlock Text="System" Style="{StaticResource SectionHeader}" />
+                        <TextBlock x:Name="ImageText" Foreground="{StaticResource TextPrimary}" />
+                        <TextBlock x:Name="PlayStoreText" Style="{StaticResource Hint}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Audio" Padding="14,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Sound" Style="{StaticResource SectionHeader}" Margin="0,4,0,8" />
+                        <CheckBox x:Name="AudioBox" Content="Enable sound" />
+
+                        <TextBlock Text="Output device" Style="{StaticResource SectionHeader}" />
+                        <ComboBox x:Name="OutputBox" />
+                        <TextBlock Text="Where this instance plays its sound. You can also switch it while playing, from the speaker button in the sidebar." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Microphone" Style="{StaticResource SectionHeader}" />
+                        <CheckBox x:Name="MicrophoneBox" Content="Enable microphone" />
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Only turn on for apps that need voice. With Bluetooth headphones, Windows switches them to call mode whenever Android uses the mic, and the normal sound cuts out. Takes effect the next time the instance starts." />
+                        <TextBlock Text="Input device" Style="{StaticResource SectionHeader}" />
+                        <ComboBox x:Name="InputBox" IsEnabled="{Binding IsChecked, ElementName=MicrophoneBox}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Advanced" Padding="14,8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="24,0,12,12">
+                        <TextBlock Text="Startup" Style="{StaticResource SectionHeader}" Margin="0,4,0,8" />
+                        <CheckBox x:Name="QuickBootBox" Content="Quick Boot (resume where you left off)" />
+                        <TextBlock Text="Saves a snapshot when you close the instance so the next start takes seconds." Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="Game controls" Style="{StaticResource SectionHeader}" />
+                        <CheckBox x:Name="KeyHintsBox" Content="Show key labels on screen while playing" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="2" BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="28,14">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Cancel" Style="{StaticResource SubtleButton}" IsCancel="True" Margin="0,0,10,0" />
+                    <Button Content="Save" Style="{StaticResource AccentButton}" IsDefault="True" Click="OnSave" />
+                </StackPanel>
+                <TextBlock x:Name="FooterText" Foreground="{StaticResource Warning}" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

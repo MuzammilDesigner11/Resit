@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Resit
+GenericName=Android Emulator
+Comment=Fast, ad-free Android emulator for games and apps
+Exec=@EXEC@
+Icon=resit
+Terminal=false
+Categories=Game;Emulator;Development;
+Keywords=android;emulator;games;
+StartupWMClass=Resit

@@ -1,0 +1,26 @@
+<Window x:Class="Resit.Views.FullscreenBar"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True"
+        ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight"
+        Title="Resit fullscreen controls">
+    <!-- Slides in when the mouse touches the top edge in fullscreen, like other emulators. -->
+    <Border Background="#F01B1D25" CornerRadius="0,0,14,14" Padding="10,6" BorderBrush="{StaticResource Divider}" BorderThickness="1,0,1,1">
+        <StackPanel Orientation="Horizontal">
+            <Button Style="{StaticResource IconButton}" Content="&#xE72B;" ToolTip="Back" AutomationProperties.Name="Back" Click="OnBack" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE80F;" ToolTip="Home" AutomationProperties.Name="Home" Click="OnHome" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE7C4;" ToolTip="Recent apps" AutomationProperties.Name="Recent apps" Click="OnRecents" />
+            <Rectangle Width="1" Fill="{StaticResource Divider}" Margin="6,8" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE995;" ToolTip="Volume up" AutomationProperties.Name="Volume up" Click="OnVolumeUp" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE993;" ToolTip="Volume down" AutomationProperties.Name="Volume down" Click="OnVolumeDown" />
+            <Button Style="{StaticResource IconButton}" Content="&#xE722;" ToolTip="Screenshot" AutomationProperties.Name="Screenshot" Click="OnScreenshot" />
+            <Rectangle Width="1" Fill="{StaticResource Divider}" Margin="6,8" />
+            <Button Style="{StaticResource SubtleButton}" Padding="12,6" Margin="4,0,0,0" Click="OnExit" AutomationProperties.Name="Exit fullscreen">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE73F;" Margin="0,1,8,0" />
+                    <TextBlock Text="Exit fullscreen (F11)" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Border>
+</Window>

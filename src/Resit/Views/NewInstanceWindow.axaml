@@ -1,0 +1,63 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Resit.Views.NewInstanceWindow"
+        Icon="/Resit.ico"
+        Title="New instance" Width="580" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource PanelBackground}">
+    <StackPanel Margin="28,20,28,24">
+        <TextBlock Text="New instance" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+
+        <TextBlock Text="Name" Classes="section" />
+        <TextBox x:Name="NameBox" />
+
+        <TextBlock Text="Edition" Classes="section" />
+        <UniformGrid Columns="2">
+            <RadioButton x:Name="PlayOption" GroupName="Edition" Theme="{StaticResource EditionCard}" Margin="0,0,6,0" IsChecked="True" IsCheckedChanged="OnEditionChanged">
+                <StackPanel>
+                    <TextBlock Text="Google Play" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimary}" />
+                    <TextBlock Text="Full Android with Play Store and Google apps." Classes="hint" />
+                </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="MinimalOption" GroupName="Edition" Theme="{StaticResource EditionCard}" Margin="6,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="Minimal" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource TextPrimary}" />
+                    <TextBlock Text="Firefox and a file manager only. No Google services, least RAM and CPU." Classes="hint" />
+                </StackPanel>
+            </RadioButton>
+        </UniformGrid>
+
+        <TextBlock Text="Android version" Classes="section" />
+        <ComboBox x:Name="ImageBox" HorizontalAlignment="Stretch" SelectionChanged="OnImageChanged" />
+        <TextBlock x:Name="ImageHint" Classes="hint" />
+
+        <Grid ColumnDefinitions="*,12,*">
+            <StackPanel>
+                <TextBlock Text="Performance" Classes="section" />
+                <ComboBox x:Name="PerfBox" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <TextBlock Text="Display" Classes="section" />
+                <ComboBox x:Name="DisplayBox" HorizontalAlignment="Stretch" />
+            </StackPanel>
+        </Grid>
+
+        <!-- Download progress -->
+        <Border x:Name="ProgressPanel" IsVisible="False" Background="{StaticResource CardBackground}" CornerRadius="10" Padding="14,12" Margin="0,18,0,0">
+            <StackPanel>
+                <DockPanel>
+                    <TextBlock x:Name="ProgressPercent" DockPanel.Dock="Right" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" />
+                    <TextBlock x:Name="ProgressTitle" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" />
+                </DockPanel>
+                <ProgressBar x:Name="DownloadBar" Height="6" Margin="0,10,0,8" Maximum="100" />
+                <TextBlock x:Name="ProgressDetail" Foreground="{StaticResource TextSecondary}" FontSize="12" />
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="ErrorText" Foreground="{StaticResource Danger}" TextWrapping="Wrap" Margin="0,14,0,0" IsVisible="False" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0" Spacing="10">
+            <Button Content="Cancel" Theme="{StaticResource SubtleButton}" Click="OnCancel" />
+            <Button x:Name="CreateButton" Content="Create" Theme="{StaticResource AccentButton}" IsDefault="True" Click="OnCreate" />
+        </StackPanel>
+    </StackPanel>
+</Window>

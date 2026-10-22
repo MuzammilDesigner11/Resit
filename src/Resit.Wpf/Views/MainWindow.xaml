@@ -1,0 +1,104 @@
+<Window x:Class="Resit.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Icon="/Resit.ico"
+        Title="Resit" Width="980" Height="640" MinWidth="720" MinHeight="460"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource AppBackground}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <DockPanel Margin="28,22,28,18">
+            <Button DockPanel.Dock="Right" x:Name="NewButton" Style="{StaticResource AccentButton}" Click="OnNewInstance" VerticalAlignment="Center" AutomationProperties.Name="New instance">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE710;" Margin="0,1,8,0" />
+                    <TextBlock Text="New instance" />
+                </StackPanel>
+            </Button>
+            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" ToolTip="Refresh" AutomationProperties.Name="Refresh" Content="&#xE72C;" Margin="0,0,8,0" Click="OnRefresh" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Image Source="{StaticResource LogoImage}" Width="40" Height="40" Margin="0,0,14,0" />
+
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Resit" FontSize="24" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" />
+                    <TextBlock Text="Instances" Foreground="{StaticResource TextSecondary}" />
+                </StackPanel>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Instance list -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="InstanceList" Margin="28,0,28,16">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="Card" Background="{StaticResource CardBackground}" CornerRadius="12" Padding="18,14" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="48" Height="48" CornerRadius="10" Background="{StaticResource AccentSoft}" Margin="0,0,16,0">
+                                    <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE8EA;" FontSize="22" Foreground="{StaticResource AccentText}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+                                    <TextBlock Text="{Binding ImageSummary}" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0" />
+                                    <TextBlock Text="{Binding Summary}" Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <Border Grid.Column="2" CornerRadius="10" Padding="10,3" Margin="12,0" VerticalAlignment="Center" Background="{Binding StatusBackground}">
+                                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{Binding StatusForeground}" />
+                                </Border>
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource AccentButton}" MinWidth="96" Click="OnPlay" Tag="{Binding}" AutomationProperties.Name="{Binding PlayLabel}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock FontFamily="{StaticResource IconFont}" Text="{Binding PlayGlyph}" Margin="0,1,8,0" />
+                                            <TextBlock Text="{Binding PlayLabel}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Settings" AutomationProperties.Name="Settings" Margin="8,0,0,0" Click="OnSettings" Tag="{Binding}" />
+                                    <Button Style="{StaticResource IconButton}" Content="&#xE712;" ToolTip="More" AutomationProperties.Name="More" Click="OnMore" Tag="{Binding}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <Trigger SourceName="Card" Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Card" Property="Background" Value="{StaticResource CardHover}" />
+                            </Trigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Shown when there is nothing to list -->
+        <StackPanel Grid.Row="1" x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" MaxWidth="460">
+            <TextBlock x:Name="EmptyIcon" FontFamily="{StaticResource IconFont}" Text="&#xE8EA;" FontSize="48" Foreground="{StaticResource AccentText}" HorizontalAlignment="Center" />
+            <TextBlock x:Name="EmptyTitle" FontSize="20" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" HorizontalAlignment="Center" Margin="0,14,0,6" />
+            <TextBlock x:Name="EmptyText" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" TextAlignment="Center" />
+            <Button x:Name="EmptyAction" Style="{StaticResource AccentButton}" HorizontalAlignment="Center" Margin="0,18,0,0" Click="OnEmptyAction" />
+        </StackPanel>
+
+        <!-- Footer: hypervisor and host info -->
+        <Border Grid.Row="2" Background="{StaticResource PanelBackground}" BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="28,10">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Right" x:Name="HostText" Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="AccelDot" Width="8" Height="8" Fill="{StaticResource TextSecondary}" Margin="0,0,8,0" />
+                    <TextBlock x:Name="AccelText" Text="Checking hardware acceleration…" Foreground="{StaticResource TextSecondary}" FontSize="12" />
+                    <Button x:Name="AccelFix" Content="Enable" Style="{StaticResource SubtleButton}" Padding="10,2" Margin="12,0,0,0" FontSize="12"
+                            Visibility="Collapsed" Click="OnEnableHypervisor" />
+                    <TextBlock x:Name="DiskWarning" Foreground="{StaticResource Warning}" FontSize="12" Margin="16,0,0,0" Visibility="Collapsed"
+                               Text="· Instances are on a hard drive, so boot is slow. An SSD is several times faster." />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
