@@ -24,6 +24,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Built in, so a downloaded Resit can download the emulator itself ("Run setup"). -->
+    <EmbeddedResource Include="..\..\setup.ps1" LogicalName="setup.ps1" />
+    <EmbeddedResource Include="..\..\setup.sh" LogicalName="setup.sh" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AvaloniaResource Include="Resit.ico" />
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>

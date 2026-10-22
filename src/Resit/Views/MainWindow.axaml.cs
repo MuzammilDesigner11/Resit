@@ -91,7 +91,7 @@ public partial class MainWindow : Window
             Log.Write($"SDK not found at {_sdk.SdkRoot}: {reason}");
             ShowEmpty("IconWarning", "Android SDK not found",
                 $"Resit needs the Android Emulator. It looked in {_sdk.SdkRoot}. {reason} Run setup to download it (about 3 GB).",
-                SdkLocation.FindUpwards(OS.SetupScript) is null ? null : "Run setup");
+                "Run setup");
             NewButton.IsEnabled = false;
             return;
         }
@@ -216,8 +216,7 @@ public partial class MainWindow : Window
     {
         if (!_sdk.IsInstalled)
         {
-            var setup = SdkLocation.FindUpwards(OS.SetupScript);
-            if (setup is null) return;
+            var setup = SdkLocation.SetupScript();
             if (!Terminal.RunScript(setup))
                 await Dialogs.ShowAsync(this, "Run setup", "Resit could not open a terminal. Run this in one:", $"bash \"{setup}\"");
             return;

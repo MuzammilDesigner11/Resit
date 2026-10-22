@@ -273,15 +273,21 @@ if (-not $SkipGpuPreference) {
     )
 }
 
-[ordered]@{
+# Where Resit finds the SDK: next to this script (repo checkout) and in its settings folder
+# (a downloaded Resit.exe).
+$state = [ordered]@{
     avdName = $AvdName
     sdkRoot = $SdkRoot
     avdHome = $AvdHome
     image   = $image
     cores   = $Cores
     ramMB   = $RamMB
-} | ConvertTo-Json | Set-Content $StateFile -Encoding ASCII
+} | ConvertTo-Json
+$state | Set-Content $StateFile -Encoding ASCII
+$settingsDir = Join-Path $env:APPDATA 'Resit'
+New-Item -ItemType Directory -Force $settingsDir | Out-Null
+$state | Set-Content (Join-Path $settingsDir 'resit.local.json') -Encoding ASCII
 
 Write-Host ''
-Write-Host 'Done. Start the emulator with:  .\start.ps1' -ForegroundColor Green
-if (-not $accelOk) { Write-Host 'But enable a hypervisor first:  .\enable-hypervisor.ps1' -ForegroundColor Yellow }
+Write-Host "Done. In Resit, press Play on '$AvdName' (or run .\start.ps1 from the repo)." -ForegroundColor Green
+if (-not $accelOk) { Write-Host 'But enable a hypervisor first: the Enable button in Resit, or .\enable-hypervisor.ps1' -ForegroundColor Yellow }

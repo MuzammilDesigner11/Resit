@@ -36,9 +36,9 @@ public sealed class SdkLocation
 
     /// <summary>
     /// Prefers resit.local.json (written by the setup script) next to the app or in any parent
-    /// folder, then the copy in Resit's settings folder (for an installed app), then the standard
-    /// Android environment variables, then the Android Studio defaults (%LOCALAPPDATA%\Android\Sdk
-    /// on Windows, ~/Android/Sdk on Linux).
+    /// folder, then the copy in Resit's settings folder (for an installed app or a downloaded exe),
+    /// then the first SDK with an emulator among the standard Android environment variables and
+    /// the usual install folders.
     /// </summary>
     public static SdkLocation Detect()
     {
@@ -63,14 +63,47 @@ public sealed class SdkLocation
         }
 
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string sdk = Environment.GetEnvironmentVariable("ANDROID_HOME")
-            ?? Environment.GetEnvironmentVariable("ANDROID_SDK_ROOT")
-            ?? (OS.IsWindows
-                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Android", "Sdk")
-                : Path.Combine(home, "Android", "Sdk"));
         string avd = Environment.GetEnvironmentVariable("ANDROID_AVD_HOME")
             ?? Path.Combine(home, ".android", "avd");
-        return new SdkLocation { SdkRoot = sdk, AvdHome = avd };
+        var candidates = SdkCandidates(home).Select(sdk => new SdkLocation { SdkRoot = sdk, AvdHome = avd }).ToList();
+        return candidates.FirstOrDefault(c => c.IsInstalled) ?? candidates[0];
+    }
+
+    /// <summary>Where an Android SDK usually lives, most likely first.</summary>
+    private static IEnumerable<string> SdkCandidates(string home)
+    {
+        foreach (var name in new[] { "ANDROID_HOME", "ANDROID_SDK_ROOT" })
+            if (Environment.GetEnvironmentVariable(name) is { Length: > 0 } value) yield return value;
+        if (OS.IsWindows)
+        {
+            yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Android", "Sdk");
+            yield return Path.Combine(home, "Android", "Sdk");
+            yield return @"C:\Android\Sdk";
+        }
+        else
+        {
+            yield return Path.Combine(home, "Android", "Sdk");
+            yield return "/opt/android-sdk";
+            yield return "/usr/lib/android-sdk";
+        }
+    }
+
+    /// <summary>
+    /// The setup script for this OS: the copy in a repo checkout if there is one, otherwise the one
+    /// built into Resit, unpacked to the settings folder (so a downloaded exe can set itself up).
+    /// </summary>
+    public static string SetupScript()
+    {
+        var found = FindUpwards(OS.SetupScript);
+        if (found is not null) return found;
+        var path = Path.Combine(AppPaths.DataDir, OS.SetupScript);
+        using (var source = typeof(SdkLocation).Assembly.GetManifestResourceStream(OS.SetupScript)
+                            ?? throw new InvalidOperationException($"{OS.SetupScript} is missing from this build."))
+        using (var target = File.Create(path))
+            source.CopyTo(target);
+        if (!OperatingSystem.IsWindows())
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        return path;
     }
 
     /// <summary>Finds a file in the app folder or one of its parents (covers running from a repo checkout).</summary>
