@@ -11,7 +11,7 @@
     <RootNamespace>Resit</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resit.ico</ApplicationIcon>
-    <Version>0.2.0</Version>
+    <Version>0.1.0</Version>
     <Product>Resit</Product>
     <Description>A fast Android emulator for Windows and Linux, built on the official Android Emulator.</Description>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>

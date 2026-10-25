@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     Builds Resit as single self-contained files (users need no .NET install):
-    dist\windows\Resit.exe, and for Linux dist\linux\ plus dist\resit-linux-x64.tar.gz.
+    dist\windows\Resit.exe and the installer dist\Resit-Setup-<version>.exe, and for Linux
+    dist\linux\ plus dist\resit-linux-x64.tar.gz.
 
 .EXAMPLE
     .\build.ps1                  # Windows and Linux
@@ -44,6 +45,22 @@ function Copy-Unix([string]$From, [string]$To) {
 if ($Target -in 'all', 'windows') {
     Publish 'win-x64' (Join-Path $dist 'windows')
     Write-Host "Built $(Join-Path $dist 'windows\Resit.exe')" -ForegroundColor Green
+
+    # The installer (Inno Setup 6, https://jrsoftware.org/isinfo.php), if it is installed.
+    $version = ([xml](Get-Content $project)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+    $iscc = @($env:ISCC, (Join-Path $HOME 'Tools\InnoSetup\ISCC.exe'),
+              (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'),
+              (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+              (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
+              (Get-Command iscc -ErrorAction SilentlyContinue).Source) |
+        Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+    if ($iscc) {
+        & $iscc /Q "/DAppVersion=$version" (Join-Path $PSScriptRoot 'installer\resit.iss')
+        if ($LASTEXITCODE -ne 0) { throw "Installer build failed ($LASTEXITCODE)" }
+        Write-Host "Built $(Join-Path $dist "Resit-Setup-$version.exe")" -ForegroundColor Green
+    } else {
+        Write-Warning 'Inno Setup 6 not found, so no installer was built (winget install JRSoftware.InnoSetup).'
+    }
 }
 
 if ($Target -in 'all', 'linux') {

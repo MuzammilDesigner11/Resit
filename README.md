@@ -47,6 +47,17 @@ CPU virtualization must be enabled in the BIOS (Intel VT-x or AMD SVM). macOS is
 
 ## Install on Windows
 
+1. Download `Resit-Setup-<version>.exe` from the [Releases page](https://github.com/MuzammilDesigner11/Resit/releases) and run it.
+   It installs for your user without an admin prompt (or for everyone, if you choose), and asks
+   whether to add Start menu and desktop shortcuts.
+2. Start Resit and click **Run setup**: it downloads the emulator and the newest Android (about 3 GB)
+   and creates an instance.
+3. If the footer says hardware acceleration is off, click **Enable**.
+
+Uninstall from Settings → Apps. Your instances and the Android SDK are kept.
+
+### From source
+
 ```powershell
 git clone https://github.com/MuzammilDesigner11/Resit.git
 cd Resit
@@ -70,7 +81,7 @@ From a release archive (Releases page, or build one yourself below):
 
 ```bash
 tar xzf resit-linux-x64.tar.gz
-./resit/install.sh        # installs for your user: app menu entry and a `resit` command
+./resit/install.sh        # installs for your user and asks about app menu and desktop icons
 ~/.local/share/resit/setup.sh   # downloads the emulator + newest Android, creates the "Resit" instance
 resit
 ```
@@ -148,7 +159,7 @@ The GUI is optional. The scripts work on their own:
 | `setup.ps1` / `setup.sh` | Installs the SDK pieces and creates an instance. Pick the image type (`google_apis` for root), pin an API level, override cores/RAM/storage, or recreate with force. `./setup.sh --help` lists the Linux options. |
 | `start.ps1` | (Windows) Starts an instance with the same performance flags. `-ColdBoot`, `-Wipe`, `-NoAudio`, `-Headless`. |
 | `enable-hypervisor.ps1` | (Windows) Turns on AEHD or WHPX. |
-| `build.ps1` / `build.sh` | Builds the app: `dist\windows\Resit.exe` and/or `dist/linux/` with `dist/resit-linux-x64.tar.gz`. |
+| `build.ps1` / `build.sh` | Builds the app: `dist\windows\Resit.exe` plus the installer `dist\Resit-Setup-<version>.exe` (needs [Inno Setup 6](https://jrsoftware.org/isinfo.php)), and/or `dist/linux/` with `dist/resit-linux-x64.tar.gz`. |
 
 ## How it works
 
