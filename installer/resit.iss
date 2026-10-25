@@ -1,5 +1,5 @@
 ; Windows installer for Resit (Inno Setup 6). build.ps1 compiles it after publishing
-; dist\windows\Resit.exe:  ISCC.exe /DAppVersion=0.1.0 installer\resit.iss
+; dist\windows\Resit.exe:  ISCC.exe /DAppVersion=0.1.1 installer\resit.iss
 ;
 ; Installs for the current user by default (no admin prompt), with an option to install for
 ; everyone. The wizard asks whether to add Start menu and desktop shortcuts.

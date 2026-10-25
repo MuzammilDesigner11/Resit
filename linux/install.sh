@@ -77,6 +77,6 @@ fi
 
 echo "Installed Resit to $APP_DIR."
 if [[ ! -x ${ANDROID_HOME:-$HOME/Android/Sdk}/emulator/emulator ]]; then
-    echo "Next: download the Android Emulator with  $APP_DIR/setup.sh  (or the Run setup button in Resit)."
+    echo "Resit downloads the Android Emulator itself on first start ($APP_DIR/setup.sh does it from a terminal)."
 fi
 echo "Start it from the app menu or desktop, or run: resit"

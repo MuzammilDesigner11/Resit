@@ -51,6 +51,7 @@ public partial class NewInstanceWindow : Window
         int version = ++_listVersion;
         ImageBox.ItemsSource = null;
         ImageBox.IsEnabled = false;
+        RetryImages.IsVisible = false;
         ImageHint.Text = "Checking which Android versions are available…";
         var images = await ImageCatalog.ListAsync(_store.Sdk, SelectedEdition);
         if (version != _listVersion) return;   // the edition changed meanwhile
@@ -59,8 +60,14 @@ public partial class NewInstanceWindow : Window
         ImageBox.IsEnabled = images.Count > 0;
         // Prefer an installed image (no download), otherwise the newest.
         ImageBox.SelectedItem = images.FirstOrDefault(i => i.Installed) ?? images.FirstOrDefault();
-        if (images.Count == 0) ImageHint.Text = "No images found. Check your internet connection.";
+        if (images.Count == 0)
+        {
+            ImageHint.Text = "Could not get the list of Android versions. Check your internet connection.";
+            RetryImages.IsVisible = true;
+        }
     }
+
+    private async void OnRetryImages(object? sender, RoutedEventArgs e) => await LoadImagesAsync();
 
     private void OnImageChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -72,7 +79,7 @@ public partial class NewInstanceWindow : Window
         CreateButton.Content = image.Installed ? "Create" : "Download and create";
         ImageHint.Text = image.Installed
             ? "Installed. The instance is ready right away."
-            : $"Resit downloads it from Google first ({image.SizeBytes / (1024 * 1024)} MB).";
+            : $"Resit downloads it from Google first ({image.SizeBytes / (1024 * 1024)} MB), under the Android SDK License Agreement.";
     }
 
     private async void OnCreate(object? sender, RoutedEventArgs e)
@@ -83,23 +90,15 @@ public partial class NewInstanceWindow : Window
         if (ImageBox.SelectedItem is not AvailableImage choice) { ShowError("Choose an Android version."); return; }
         ErrorText.IsVisible = false;
 
-        if (!choice.Installed)
+        if (!SdkSetup.IsComplete(_store.Sdk) || !choice.Installed)
         {
             SetBusy(true);
-            ProgressTitle.Text = $"Downloading Android {choice.AndroidVersion}";
             ProgressPanel.IsVisible = true;
             _download = new CancellationTokenSource();
-            var progress = new Progress<InstallProgress>(p =>
-            {
-                DownloadBar.Value = p.Percent;
-                DownloadBar.IsIndeterminate = p.Percent == 0 && p.Phase.EndsWith('…');
-                ProgressPercent.Text = DownloadBar.IsIndeterminate ? "" : $"{p.Percent:0}%";
-                ProgressDetail.Text = p.Phase;
-                if (p.Phase.StartsWith("Unpacking")) ProgressTitle.Text = $"Unpacking Android {choice.AndroidVersion}";
-            });
             try
             {
-                await ImageCatalog.InstallAsync(_store.Sdk, choice.Path, progress, _download.Token);
+                if (!SdkSetup.IsComplete(_store.Sdk)) await WaitForEmulatorSetupAsync(_download.Token);
+                if (!choice.Installed) await DownloadImageAsync(choice, _download.Token);
             }
             catch (OperationCanceledException)
             {
@@ -110,6 +109,7 @@ public partial class NewInstanceWindow : Window
             catch (Exception ex) when (ex is InvalidOperationException or IOException)
             {
                 SetBusy(false);
+                ProgressPanel.IsVisible = false;
                 ShowError(ex.Message);
                 return;
             }
@@ -125,6 +125,7 @@ public partial class NewInstanceWindow : Window
         if (image is null)
         {
             SetBusy(false);
+            ProgressPanel.IsVisible = false;
             ShowError("The download finished but the system image was not found.");
             return;
         }
@@ -141,6 +142,52 @@ public partial class NewInstanceWindow : Window
             SetBusy(false);
             ShowError(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// The emulator downloads in the background from Resit's first start. Waits for it (starting
+    /// it again if it failed) and shows its progress here; Cancel stops waiting, not the download.
+    /// </summary>
+    private async Task WaitForEmulatorSetupAsync(CancellationToken ct)
+    {
+        void Show()
+        {
+            ProgressTitle.Text = "Setting up the Android Emulator";
+            if (SdkSetup.Status is { Running: true } s) SetProgress(s.Percent, s.Detail);
+        }
+        SetProgress(null, "Starting…");
+        Show();
+        SdkSetup.StatusChanged += Show;
+        try
+        {
+            if (!await SdkSetup.RunAsync(_store.Sdk).WaitAsync(ct))
+                throw new InvalidOperationException($"Could not download the Android Emulator. {SdkSetup.Status?.Error}");
+        }
+        finally
+        {
+            SdkSetup.StatusChanged -= Show;
+        }
+    }
+
+    private async Task DownloadImageAsync(AvailableImage choice, CancellationToken ct)
+    {
+        ProgressTitle.Text = $"Downloading Android {choice.AndroidVersion}";
+        SetProgress(null, "Preparing download…");
+        var progress = new Progress<InstallProgress>(p =>
+        {
+            SetProgress(p.Percent == 0 && p.Phase.EndsWith('…') ? null : p.Percent, p.Phase);
+            if (p.Phase.StartsWith("Unpacking")) ProgressTitle.Text = $"Unpacking Android {choice.AndroidVersion}";
+        });
+        await ImageCatalog.InstallAsync(_store.Sdk, choice.Path, progress, ct);
+    }
+
+    /// <summary>A null percent shows a moving bar (busy, length unknown).</summary>
+    private void SetProgress(double? percent, string detail)
+    {
+        DownloadBar.IsIndeterminate = percent is null;
+        DownloadBar.Value = percent ?? 0;
+        ProgressPercent.Text = percent is { } p ? $"{p:0}%" : "";
+        ProgressDetail.Text = detail;
     }
 
     private void SetBusy(bool busy)

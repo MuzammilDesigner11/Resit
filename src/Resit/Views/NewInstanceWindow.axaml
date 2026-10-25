@@ -29,6 +29,8 @@
         <TextBlock Text="Android version" Classes="section" />
         <ComboBox x:Name="ImageBox" HorizontalAlignment="Stretch" SelectionChanged="OnImageChanged" />
         <TextBlock x:Name="ImageHint" Classes="hint" />
+        <Button x:Name="RetryImages" Content="Try again" Theme="{StaticResource SubtleButton}" Padding="12,4" FontSize="12"
+                Margin="0,8,0,0" IsVisible="False" Click="OnRetryImages" />
 
         <Grid ColumnDefinitions="*,12,*">
             <StackPanel>

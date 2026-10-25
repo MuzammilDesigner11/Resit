@@ -55,6 +55,14 @@ public static class Firefox
         return path;
     }
 
+    /// <summary>Removes the downloaded APK, for when no Minimal instance needs it any more.</summary>
+    public static void ClearCache()
+    {
+        var dir = Path.Combine(AppPaths.DataDir, "cache");
+        if (!Directory.Exists(dir)) return;
+        foreach (var apk in Directory.EnumerateFiles(dir, "fenix-*")) File.Delete(apk);
+    }
+
     /// <summary>Installs Firefox and makes it the default browser. Returns false if the install failed.</summary>
     public static async Task<bool> InstallAsync(Adb adb, string apk)
     {

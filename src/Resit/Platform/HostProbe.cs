@@ -79,6 +79,23 @@ internal static class WindowsHost
             return false;
         }
     }
+
+    /// <summary>
+    /// Whether virtualization (Intel VT-x / AMD SVM) is on in the BIOS; null when unknown. Only
+    /// meaningful while no hypervisor runs: under Hyper-V, Windows reports it as off.
+    /// </summary>
+    public static bool? IsVirtualizationEnabledInFirmware()
+    {
+        try
+        {
+            using var q = new ManagementObjectSearcher("SELECT VirtualizationFirmwareEnabled FROM Win32_Processor");
+            return q.Get().Cast<ManagementBaseObject>().Select(o => o["VirtualizationFirmwareEnabled"] as bool?).FirstOrDefault();
+        }
+        catch (ManagementException)
+        {
+            return null;
+        }
+    }
 }
 
 /// <summary>Reads the PC's CPU, RAM, GPUs and disks on Linux (/proc, lspci, lsblk).</summary>

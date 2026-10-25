@@ -15,7 +15,7 @@ public sealed class SdkLocation
     public string AndroidCli => Path.Combine(SdkRoot, "cmdline-tools", "latest", "bin", OS.Exe("android"));
     public bool IsInstalled => File.Exists(Emulator) && File.Exists(Adb);
 
-    /// <summary>Why <see cref="IsInstalled"/> is false, for the "SDK not found" screen and the log.</summary>
+    /// <summary>Why <see cref="IsInstalled"/> is false, for the log.</summary>
     public string MissingReason()
     {
         var missing = new[] { Emulator, Adb }.Where(f => !File.Exists(f)).ToList();
@@ -88,24 +88,6 @@ public sealed class SdkLocation
         }
     }
 
-    /// <summary>
-    /// The setup script for this OS: the copy in a repo checkout if there is one, otherwise the one
-    /// built into Resit, unpacked to the settings folder (so a downloaded exe can set itself up).
-    /// </summary>
-    public static string SetupScript()
-    {
-        var found = FindUpwards(OS.SetupScript);
-        if (found is not null) return found;
-        var path = Path.Combine(AppPaths.DataDir, OS.SetupScript);
-        using (var source = typeof(SdkLocation).Assembly.GetManifestResourceStream(OS.SetupScript)
-                            ?? throw new InvalidOperationException($"{OS.SetupScript} is missing from this build."))
-        using (var target = File.Create(path))
-            source.CopyTo(target);
-        if (!OperatingSystem.IsWindows())
-            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        return path;
-    }
-
     /// <summary>Finds a file in the app folder or one of its parents (covers running from a repo checkout).</summary>
     public static string? FindUpwards(string fileName)
     {
@@ -115,6 +97,21 @@ public sealed class SdkLocation
             if (File.Exists(candidate)) return candidate;
         }
         return null;
+    }
+}
+
+public static class Files
+{
+    /// <summary>
+    /// Deletes a folder and everything in it, including files the emulator marks read-only
+    /// (e.g. data\misc\pstore\pstore.bin), which Directory.Delete refuses to remove.
+    /// </summary>
+    public static void DeleteDirectory(string dir)
+    {
+        if (!Directory.Exists(dir)) return;
+        foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+            File.SetAttributes(file, FileAttributes.Normal);
+        Directory.Delete(dir, recursive: true);
     }
 }
 

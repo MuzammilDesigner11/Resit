@@ -15,7 +15,8 @@ GPU (Resit embeds its window rather than streaming frames), so the UI costs no p
 ## Features
 
 - **Instances**: create, start, stop, wipe and delete as many as you like, and run several at once.
-  Choose any Android version Google publishes; Resit downloads it with a progress bar.
+  Choose any Android version Google publishes; Resit downloads it with a progress bar. Deleting the
+  last instance of a version also removes that version's download.
 - **Two editions**:
   - **Google Play**: full Android with the Play Store.
   - **Minimal**: AOSP trimmed to Firefox and a file manager. No Google services, so it uses the least RAM and CPU.
@@ -32,7 +33,7 @@ GPU (Resit embeds its window rather than streaming frames), so the UI costs no p
 - **Fullscreen**: the whole monitor, taskbar or panel included. Move the mouse to the top edge for a drop-down bar, or press F11 to leave.
 - **Sound**: pick the output device per instance, even while playing.
 - **Quick Boot**: closing saves a snapshot, so the next start resumes in seconds.
-- **Lightweight**: no Android Studio, no Java. The setup script downloads only what the emulator needs.
+- **Lightweight**: no Android Studio, no Java. Resit downloads only what the emulator needs.
 
 ## Requirements
 
@@ -50,9 +51,10 @@ CPU virtualization must be enabled in the BIOS (Intel VT-x or AMD SVM). macOS is
 1. Download `Resit-Setup-<version>.exe` from the [Releases page](https://github.com/MuzammilDesigner11/Resit/releases) and run it.
    It installs for your user without an admin prompt (or for everyone, if you choose), and asks
    whether to add Start menu and desktop shortcuts.
-2. Start Resit and click **Run setup**: it downloads the emulator and the newest Android (about 3 GB)
-   and creates an instance.
-3. If the footer says hardware acceleration is off, click **Enable**.
+2. Start Resit. It downloads the Android Emulator in the background (a bar at the top shows progress).
+3. Click **New instance** right away and pick the Android version you want. Resit downloads that
+   version once the emulator is in place.
+4. If the footer says hardware acceleration is off, click **Enable** (Resit also offers this when you press Play).
 
 Uninstall from Settings → Apps. Your instances and the Android SDK are kept.
 
@@ -82,9 +84,11 @@ From a release archive (Releases page, or build one yourself below):
 ```bash
 tar xzf resit-linux-x64.tar.gz
 ./resit/install.sh        # installs for your user and asks about app menu and desktop icons
-~/.local/share/resit/setup.sh   # downloads the emulator + newest Android, creates the "Resit" instance
-resit
+resit                     # downloads the emulator in the background; then click New instance
 ```
+
+`~/.local/share/resit/setup.sh` does the same from a terminal, and also checks KVM and the libraries
+the emulator needs.
 
 From source (needs the [.NET 10 SDK](https://dotnet.microsoft.com/download)):
 
@@ -202,7 +206,7 @@ replaces it; it is not part of the build.
 - **Slow start ("checking the network")**: before booting, the emulator probes your network and DNS, which takes a minute on some networks.
 - **Linux: the emulator does not start**: run `setup.sh` again; it lists missing libraries. The emulator log (⋯ → Open log) has the details.
 - **Linux: key labels over the game**: shown while you edit the controls; showing them during play is Windows-only for now.
-- **"Android SDK not found" on Windows although the SDK is there**: if you ran `setup.ps1` from a terminal inside a Microsoft Store (MSIX) app, such as an IDE or an AI assistant installed from the Store, Windows redirected everything it wrote under `AppData` into that app's private storage. Run setup from a normal terminal, or put the SDK outside AppData: `.\setup.ps1 -SdkRoot C:\Android\Sdk`.
+- **Resit downloads the emulator again although `setup.ps1` installed it**: if you ran `setup.ps1` from a terminal inside a Microsoft Store (MSIX) app, such as an IDE or an AI assistant installed from the Store, Windows redirected everything it wrote under `AppData` into that app's private storage. Run setup from a normal terminal, or put the SDK outside AppData: `.\setup.ps1 -SdkRoot C:\Android\Sdk`.
 - **Slow first start**: a new instance's first boot is a full Android boot (2–4 minutes). Later starts use Quick Boot.
 - **Closing takes a while**: Quick Boot saves the instance's RAM to disk. Less RAM saves faster, or turn Quick Boot off in Settings → Advanced.
 - **Logs**: `resit-emulator.log` in the instance folder (⋯ → Open log) and `resit.log` in `%APPDATA%\Resit` or `~/.config/Resit`.
@@ -210,7 +214,7 @@ replaces it; it is not part of the build.
 ## Roadmap
 
 macOS, key labels during play on Linux, mouse-look aiming for shooters, repeat-tap and swipe
-controls, gamepad support, macros, and installing the SDK from inside the app.
+controls, gamepad support and macros.
 
 ## License
 

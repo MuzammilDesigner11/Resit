@@ -11,7 +11,7 @@
     <RootNamespace>Resit</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Resit.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Product>Resit</Product>
     <Description>A fast Android emulator for Windows and Linux, built on the official Android Emulator.</Description>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
@@ -21,12 +21,6 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\*.proto" GrpcServices="Client" ProtoRoot="Protos" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Built in, so a downloaded Resit can download the emulator itself ("Run setup"). -->
-    <EmbeddedResource Include="..\..\setup.ps1" LogicalName="setup.ps1" />
-    <EmbeddedResource Include="..\..\setup.sh" LogicalName="setup.sh" />
   </ItemGroup>
 
   <ItemGroup>

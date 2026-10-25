@@ -95,7 +95,7 @@ public static partial class ImageCatalog
     private static async Task InstallOnceAsync(SdkLocation sdk, string packagePath, IProgress<InstallProgress> progress, CancellationToken ct)
     {
         var cli = sdk.AndroidCli;
-        if (!File.Exists(cli)) throw new FileNotFoundException($"The Android command-line tools are missing. Run {Platform.OS.SetupScript} first.", cli);
+        if (!File.Exists(cli)) throw new FileNotFoundException("The Android command-line tools are missing. Restart Resit to download them.", cli);
 
         var psi = new ProcessStartInfo(cli)
         {
@@ -133,6 +133,47 @@ public static partial class ImageCatalog
         ct.ThrowIfCancellationRequested();
         if (p.ExitCode != 0)
             throw new InvalidOperationException($"Download failed ({p.ExitCode}). {(await errors).Trim()}");
+    }
+
+    /// <summary>
+    /// Uninstalls a system image through the Android CLI, so it stops counting as installed,
+    /// then deletes whatever is left of its folder and the partial downloads the CLI keeps for
+    /// resuming (half a GB or more each). Don't call while an install is running.
+    /// </summary>
+    public static async Task RemoveAsync(SdkLocation sdk, SystemImage image)
+    {
+        string[] parts = [image.ApiId, image.Tag, image.Abi];
+        if (parts.Any(p => p is "" or "." or "..")) return;
+        var dir = Path.Combine(sdk.SdkRoot, "system-images", image.ApiId, image.Tag, image.Abi);
+
+        if (File.Exists(sdk.AndroidCli))
+        {
+            var package = $"system-images/{image.ApiId}/{image.Tag}/{image.Abi}";
+            try
+            {
+                var (code, output) = await ProcessRunner.RunAsync(sdk.AndroidCli,
+                    ["--no-metrics", $"--sdk={sdk.SdkRoot}", "sdk", "remove", package], TimeSpan.FromMinutes(2));
+                if (code != 0) Log.Write($"sdk remove {package} failed ({code}): {output.Trim()}");
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                Log.Write($"sdk remove {package} failed: {ex.Message}");
+            }
+        }
+
+        await Task.Run(() =>
+        {
+            Files.DeleteDirectory(dir);
+            // system-images\android-36\default, then system-images\android-36, once empty.
+            for (var parent = Path.GetDirectoryName(dir); parent is not null && Path.GetFileName(parent) != "system-images"; parent = Path.GetDirectoryName(parent))
+            {
+                if (!Directory.Exists(parent) || Directory.EnumerateFileSystemEntries(parent).Any()) break;
+                Directory.Delete(parent);
+            }
+            var partial = Path.Combine(sdk.SdkRoot, ".sdk", "arch");
+            if (Directory.Exists(partial) && !SdkSetup.IsRunning)
+                foreach (var file in Directory.EnumerateFiles(partial, "*.part")) File.Delete(file);
+        });
     }
 
     private static void Report(string line, IProgress<InstallProgress> progress)

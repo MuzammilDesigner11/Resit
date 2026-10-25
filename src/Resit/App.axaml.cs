@@ -26,6 +26,8 @@ public partial class App : Application
         {
             // Closing the instance list leaves running players open; the app ends with the last window.
             desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+            // Don't leave the emulator download running behind a closed app; the next start resumes it.
+            desktop.Exit += (_, _) => SdkSetup.Cancel();
             desktop.MainWindow = new MainWindow();
             SingleInstance.Listen(() => Dispatcher.UIThread.Post(ShowInstanceList));
         }

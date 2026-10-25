@@ -123,18 +123,43 @@ public sealed partial class InstanceStore(SdkLocation sdk)
         return Instance.Load(Path.Combine(Sdk.AvdHome, name + ".ini"))!;
     }
 
-    public void Delete(Instance instance)
+    /// <summary>
+    /// Deletes an instance and everything it brought in: its folder and .ini, its Android
+    /// version (system image, several GB) unless another instance still uses it, and the
+    /// cached Firefox once no Minimal instance is left.
+    /// </summary>
+    public async Task DeleteAsync(Instance instance)
     {
-        if (Directory.Exists(instance.Dir))
+        var image = ImageOnlyUsedBy(instance);
+        await Task.Run(() =>
         {
-            // The emulator marks some files read-only (e.g. data\misc\pstore\pstore.bin), which
-            // Directory.Delete refuses to remove.
-            foreach (var file in Directory.EnumerateFiles(instance.Dir, "*", SearchOption.AllDirectories))
-                File.SetAttributes(file, FileAttributes.Normal);
-            Directory.Delete(instance.Dir, recursive: true);
-        }
-        if (File.Exists(instance.IniPath)) File.Delete(instance.IniPath);
+            Files.DeleteDirectory(instance.Dir);
+            if (File.Exists(instance.IniPath)) File.Delete(instance.IniPath);
+        });
+        if (image is not null) await ImageCatalog.RemoveAsync(Sdk, image);
+        if (instance.Options.Edition == Edition.Minimal && List().All(i => i.Options.Edition != Edition.Minimal))
+            Firefox.ClearCache();
     }
+
+    /// <summary>The installed Android version that only this instance uses (deleting it frees the space), if any.</summary>
+    public SystemImage? ImageOnlyUsedBy(Instance instance)
+    {
+        if (instance.Image is not { } image) return null;
+        var installed = SystemImage.FindInstalled(Sdk.SdkRoot).FirstOrDefault(i => SameImage(i, image));
+        if (installed is null) return null;
+        return List().Any(i => i.Name != instance.Name && i.Image is { } other && SameImage(other, image)) ? null : installed;
+    }
+
+    /// <summary>Disk space an installed system image takes.</summary>
+    public long SizeOf(SystemImage image)
+    {
+        var dir = Path.Combine(Sdk.SdkRoot, image.RelativePath);
+        return Directory.Exists(dir) ? Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Sum(f => new FileInfo(f).Length) : 0;
+    }
+
+    // image.sysdir.1 is written with either slash, so compare the parts, not the path.
+    private static bool SameImage(SystemImage a, SystemImage b) =>
+        a.ApiId == b.ApiId && a.Tag == b.Tag && a.Abi == b.Abi;
 
     /// <summary>Factory reset: removes user data and snapshots; the next boot starts fresh.</summary>
     public static void WipeData(Instance instance)

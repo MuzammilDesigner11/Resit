@@ -7,7 +7,6 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Resit.Core;
-using Resit.Platform;
 
 namespace Resit.Views;
 
@@ -56,27 +55,40 @@ public partial class MainWindow : Window
     private readonly InstanceStore _store;
     private readonly DispatcherTimer _statusTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     private List<InstanceItem> _items = [];
+    private bool _sdkInstalled;
+
+    private enum Accel { Unknown, Ready, Off, Enabling, RestartNeeded, Failed }
+    private Accel _accel;
+    /// <summary>What the banner says about acceleration: progress while turning it on, or why that failed.</summary>
+    private string _accelDetail = "";
+    /// <summary>Acceleration is turned on by itself once per run; after that only when the user asks.</summary>
+    private bool _autoEnableTried;
 
     public MainWindow()
     {
         InitializeComponent();
         _store = new InstanceStore(_sdk);
+        _sdkInstalled = _sdk.IsInstalled;
         var host = HostInfo.Current;
         HostText.Text = $"{host.CpuName} · {host.PhysicalCores}C/{host.LogicalCores}T · {host.RamMB / 1024.0:0} GB"
             + (host.Gpus.Count > 0 ? $" · {host.Gpus[0]}" : "");
         Opened += async (_, _) =>
         {
             Refresh();
+            UpdateBanner();
+            if (!_sdk.IsInstalled) StartEmulatorSetup();
             await CheckAccelerationAsync();
             if (await Task.Run(() => HostInfo.IsOnHardDrive(_sdk.AvdHome))) DiskWarning.IsVisible = true;
         };
         _statusTimer.Tick += (_, _) => UpdateRunningState();
         _statusTimer.Start();
         PlayerWindow.SessionsChanged += OnSessionsChanged;
+        SdkSetup.StatusChanged += UpdateBanner;
         Closed += (_, _) =>
         {
             _statusTimer.Stop();
             PlayerWindow.SessionsChanged -= OnSessionsChanged;
+            SdkSetup.StatusChanged -= UpdateBanner;
         };
     }
 
@@ -84,46 +96,99 @@ public partial class MainWindow : Window
 
     private void Refresh()
     {
-        if (!_sdk.IsInstalled)
-        {
-            InstanceList.ItemsSource = null;
-            var reason = _sdk.MissingReason();
-            Log.Write($"SDK not found at {_sdk.SdkRoot}: {reason}");
-            ShowEmpty("IconWarning", "Android SDK not found",
-                $"Resit needs the Android Emulator. It looked in {_sdk.SdkRoot}. {reason} Run setup to download it (about 3 GB).",
-                "Run setup");
-            NewButton.IsEnabled = false;
-            return;
-        }
-
-        NewButton.IsEnabled = true;
         _items = _store.List().Select(i => new InstanceItem(i)).ToList();
         InstanceList.ItemsSource = _items;
         UpdateRunningState();
-        if (_items.Count == 0)
-            ShowEmpty("IconPhone", "No instances yet", "Create an instance to start playing. Resit sizes it to your PC automatically.", "Create instance");
-        else
-            EmptyState.IsVisible = false;
+        EmptyState.IsVisible = _items.Count == 0;
     }
 
-    private void ShowEmpty(string icon, string title, string text, string? action)
+    /// <summary>
+    /// First start: downloads the emulator in the background. Instances can be created
+    /// meanwhile; the timer notices when the emulator is there.
+    /// </summary>
+    private void StartEmulatorSetup()
     {
-        if (this.TryFindResource(icon, out var geometry)) EmptyIcon.Data = geometry as Geometry;
-        EmptyTitle.Text = title;
-        EmptyText.Text = text;
-        EmptyAction.Content = action;
-        EmptyAction.IsVisible = action is not null;
-        EmptyState.IsVisible = true;
+        if (!SdkSetup.IsRunning) Log.Write($"SDK not found at {_sdk.SdkRoot}: {_sdk.MissingReason()} Downloading it.");
+        _ = SdkSetup.RunAsync(_sdk);
+    }
+
+    /// <summary>
+    /// The banner over the list shows what is left before playing: the emulator downloading (or
+    /// why that failed), then hardware acceleration being turned on, needing a restart, or
+    /// failing. Hidden once nothing is left.
+    /// </summary>
+    private void UpdateBanner()
+    {
+        if (SdkSetup.Status is { } s && (s.Running || s.Error is not null))
+        {
+            bool failed = s.Error is not null;
+            ShowBanner(failed ? "IconWarning" : "IconInstall", failed,
+                failed ? "Could not download the Android Emulator" : "Setting up the Android Emulator",
+                s.Error ?? s.Detail, s.Running ? s.Percent ?? -1 : null,
+                s.Running ? "A one-time download from Google, under the Android SDK License Agreement. You can already create an instance: the Android version you pick downloads right after." : "",
+                failed ? "Try again" : null);
+            return;
+        }
+        switch (_accel)
+        {
+            case Accel.Enabling:
+                ShowBanner("IconPower", false, "Turning on hardware acceleration", _accelDetail, -1,
+                    "The emulator needs it to run Android. Windows asks for your permission once.", null);
+                break;
+            case Accel.RestartNeeded:
+                ShowBanner("IconPower", false, "Restart your PC to finish",
+                    "Hardware acceleration is turned on and starts working after a restart.", null, "", "Restart now");
+                break;
+            case Accel.Off when OperatingSystem.IsWindows():
+                ShowBanner("IconWarning", true, "Hardware acceleration is off",
+                    _accelDetail is "" ? "Instances cannot start without it." : _accelDetail, null, "", "Turn on");
+                break;
+            case Accel.Off:
+                ShowBanner("IconWarning", true, "Hardware acceleration is off", "Instances cannot start until KVM is usable.", null, "", "How to fix");
+                break;
+            case Accel.Failed:
+                ShowBanner("IconWarning", true, "Could not turn on hardware acceleration", _accelDetail, null, "", "Try again");
+                break;
+            default:
+                Banner.IsVisible = false;
+                break;
+        }
+    }
+
+    /// <summary>A null percent hides the progress bar; a negative one shows it moving (length unknown).</summary>
+    private void ShowBanner(string icon, bool warning, string title, string detail, double? percent, string hint, string? action)
+    {
+        Banner.IsVisible = true;
+        if (this.TryFindResource(icon, out var geometry)) BannerIcon.Data = geometry as Geometry;
+        if (this.TryFindResource(warning ? "Warning" : "AccentText", out var brush)) BannerIcon.Foreground = brush as IBrush;
+        BannerTitle.Text = title;
+        BannerDetail.Text = detail;
+        BannerDetail.IsVisible = detail.Length > 0;
+        BannerBar.IsVisible = percent is not null;
+        BannerBar.IsIndeterminate = percent < 0;
+        BannerBar.Value = Math.Max(0, percent ?? 0);
+        BannerPercent.Text = percent >= 0 ? $"{percent:0}%" : "";
+        BannerHint.Text = hint;
+        BannerHint.IsVisible = hint.Length > 0;
+        BannerAction.Content = action;
+        BannerAction.IsVisible = action is not null;
+    }
+
+    private async void OnBannerAction(object? sender, RoutedEventArgs e)
+    {
+        if (SdkSetup.Status?.Error is not null) StartEmulatorSetup();
+        else if (_accel == Accel.RestartNeeded) await RestartAsync();
+        else await EnableAccelerationAsync();
     }
 
     private void UpdateRunningState()
     {
-        // The SDK can appear after start-up (setup finished, a drive came back, files were
-        // being moved), so keep checking instead of showing "not found" forever.
-        if (_sdk.IsInstalled != NewButton.IsEnabled)
+        // The emulator can appear after start-up (the background setup finished, a drive came
+        // back, files were being moved) or go away, so keep checking.
+        if (_sdk.IsInstalled != _sdkInstalled)
         {
-            Refresh();
-            return;
+            _sdkInstalled = _sdk.IsInstalled;
+            _ = CheckAccelerationAsync();
         }
         var running = RunningEmulator.List().Select(r => r.AvdName).ToHashSet();
         foreach (var item in _items)
@@ -132,29 +197,152 @@ public partial class MainWindow : Window
 
     private async Task CheckAccelerationAsync()
     {
-        if (!_sdk.IsInstalled)
+        if (_accel == Accel.Enabling) return;   // EnableAccelerationAsync checks again when it is done
+        _accel = Accel.Unknown;
+        _accelDetail = "";
+        SetAccelFooter("TextSecondary", _sdk.IsInstalled ? "Checking hardware acceleration…" : "Hardware acceleration is checked once the emulator is installed");
+        if (_sdk.IsInstalled)
         {
-            AccelText.Text = "Emulator not installed";
+            try
+            {
+                var (ok, line) = await Acceleration.CheckAsync(_sdk);
+                _accel = ok ? Accel.Ready : OperatingSystem.IsWindows() && Acceleration.RestartPending ? Accel.RestartNeeded : Accel.Off;
+                SetAccelFooter(ok ? "Success" : "Warning",
+                    ok ? $"Hardware acceleration ready · {line}" :
+                    _accel == Accel.RestartNeeded ? "Hardware acceleration works after a restart" : "Hardware acceleration is off, so instances cannot start");
+                if (_accel == Accel.Off && Acceleration.RestartedWithoutEffect)
+                    _accelDetail = "It is still off after the restart. Virtualization may be turned off in the BIOS/UEFI (Intel VT-x or AMD SVM).";
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or InvalidOperationException or Win32Exception or IOException)
+            {
+                SetAccelFooter("TextSecondary", "Could not check hardware acceleration");
+            }
+        }
+        UpdateBanner();
+
+        // Turn it on by itself, once, so all that is left to the user is Windows' permission
+        // prompt and maybe a restart. Not again after a restart that did not help: the banner
+        // explains instead of prompting on every start.
+        if (_accel == Accel.Off && OperatingSystem.IsWindows() && !_autoEnableTried && !Acceleration.RestartedWithoutEffect)
+        {
+            _autoEnableTried = true;
+            await EnableAccelerationAsync();
+        }
+    }
+
+    private void SetAccelFooter(string brush, string text)
+    {
+        if (this.TryFindResource(brush, out var fill)) AccelDot.Fill = fill as IBrush;
+        AccelText.Text = text;
+    }
+
+    /// <summary>
+    /// Turns hardware acceleration on. On Windows this runs by itself (Windows asks for admin
+    /// rights) and ends ready or waiting for a restart; on Linux it explains the KVM steps.
+    /// </summary>
+    private async Task EnableAccelerationAsync()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            await Dialogs.ShowAsync(this, "Hardware acceleration",
+                "The emulator needs KVM. Turn on virtualization (Intel VT-x or AMD SVM) in your BIOS, then give your " +
+                "user access to KVM with the command below. Log out and back in afterwards.",
+                "sudo usermod -aG kvm $USER");
+            await CheckAccelerationAsync();
             return;
         }
+        if (_accel == Accel.Enabling) return;
+        _accel = Accel.Enabling;
+        _accelDetail = "Starting…";
+        UpdateBanner();
+        SetAccelFooter("TextSecondary", "Turning on hardware acceleration…");
+
+        EnableResult result;
+        string? error;
         try
         {
-            var (_, output) = await ProcessRunner.RunAsync(_sdk.Emulator, ["-accel-check"], TimeSpan.FromSeconds(20));
-            var line = output.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.Contains("usable") || l.Contains("installed"));
-            bool ok = output.Contains("is installed and usable");
-            if (this.TryFindResource(ok ? "Success" : "Warning", out var brush)) AccelDot.Fill = brush as IBrush;
-            AccelText.Text = ok ? $"Hardware acceleration ready · {line}" : "Hardware acceleration is off. The emulator will be very slow.";
-            AccelFix.IsVisible = !ok;
+            var progress = new Progress<string>(text =>
+            {
+                if (_accel != Accel.Enabling) return;   // a late report after the result
+                _accelDetail = text;
+                UpdateBanner();
+            });
+            (result, error) = await Acceleration.EnableOnWindowsAsync(_sdk, progress);
         }
-        catch (Exception ex) when (ex is OperationCanceledException or InvalidOperationException or Win32Exception)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            AccelText.Text = "Could not check hardware acceleration";
+            Log.Write($"turning on acceleration failed: {ex}");
+            (result, error) = (EnableResult.Failed, ex.Message);
+        }
+
+        _accel = result switch
+        {
+            EnableResult.RestartNeeded => Accel.RestartNeeded,
+            EnableResult.Declined => Accel.Off,
+            EnableResult.Failed => Accel.Failed,
+            _ => Accel.Unknown,
+        };
+        _accelDetail = result == EnableResult.Declined ? "Windows did not get permission, so it is still off." : error ?? "";
+        if (result == EnableResult.Ready)
+        {
+            await CheckAccelerationAsync();
+            return;
+        }
+        SetAccelFooter("Warning", result == EnableResult.RestartNeeded ? "Hardware acceleration works after a restart" : "Hardware acceleration is off, so instances cannot start");
+        UpdateBanner();
+    }
+
+    private async Task RestartAsync()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        if (await Dialogs.ConfirmAsync(this, "Restart now",
+                "Hardware acceleration starts working after Windows restarts. Restart now? Save your work in other apps first.", "Restart"))
+            Acceleration.RestartWindows();
+    }
+
+    /// <summary>
+    /// True when an instance can start. Otherwise explains why and offers the fix: the emulator
+    /// is still downloading or missing, or hardware acceleration is off (the emulator refuses to
+    /// run x86_64 Android without it).
+    /// </summary>
+    private async Task<bool> ReadyToPlayAsync()
+    {
+        if (!_sdk.IsInstalled)
+        {
+            if (SdkSetup.IsRunning)
+                await Dialogs.ShowAsync(this, "Almost ready", "Resit is still downloading the Android Emulator. Press Play again when the bar at the top is done.");
+            else if (await Dialogs.ConfirmAsync(this, "Android Emulator missing", "The Android Emulator is not installed. Download it now?", "Download"))
+                StartEmulatorSetup();
+            return false;
+        }
+        if (_accel is Accel.Off or Accel.Failed) await CheckAccelerationAsync();   // it may have been fixed meanwhile
+        switch (_accel)
+        {
+            case Accel.Enabling:
+                await Dialogs.ShowAsync(this, "Almost ready", "Resit is turning on hardware acceleration. Press Play again when it is done.");
+                return false;
+            case Accel.RestartNeeded:
+                await RestartAsync();
+                return false;
+            case Accel.Off or Accel.Failed:
+                if (await Dialogs.ConfirmAsync(this, "Hardware acceleration is off",
+                        "The emulator needs hardware acceleration to run Android, and it is off on this PC. Turn it on now?", "Turn on"))
+                    await EnableAccelerationAsync();
+                return _accel == Accel.Ready;
+            default:
+                return true;
         }
     }
 
     private static Instance InstanceOf(object? sender) => ((InstanceItem)((Control)sender!).Tag!).Instance;
 
-    private void OnPlay(object? sender, RoutedEventArgs e) => PlayerWindow.Open(_sdk, InstanceOf(sender), new StartOptions());
+    private async void OnPlay(object? sender, RoutedEventArgs e)
+    {
+        var instance = InstanceOf(sender);
+        // An open instance only comes to the front.
+        if (PlayerWindow.IsOpen(instance.Name) || await ReadyToPlayAsync())
+            PlayerWindow.Open(_sdk, instance, new StartOptions());
+    }
 
     private async void OnSettings(object? sender, RoutedEventArgs e)
     {
@@ -180,7 +368,10 @@ public partial class MainWindow : Window
             menu.Items.Add(item);
         }
 
-        Item("Cold boot", "IconColdBoot", () => PlayerWindow.Open(_sdk, instance, new StartOptions(ColdBoot: true)), !running);
+        Item("Cold boot", "IconColdBoot", async () =>
+        {
+            if (await ReadyToPlayAsync()) PlayerWindow.Open(_sdk, instance, new StartOptions(ColdBoot: true));
+        }, !running);
         Item("Wipe data…", "IconWipe", async () =>
         {
             if (!await Dialogs.ConfirmAsync(this, "Wipe data", $"Erase all apps and data in {instance.DisplayName}? This cannot be undone.", "Wipe")) return;
@@ -195,8 +386,20 @@ public partial class MainWindow : Window
         menu.Items.Add(new Separator());
         Item("Delete…", "IconDelete", async () =>
         {
-            if (!await Dialogs.ConfirmAsync(this, "Delete instance", $"Delete {instance.DisplayName} and everything in it?", "Delete")) return;
-            _store.Delete(instance);
+            var image = _store.ImageOnlyUsedBy(instance);
+            var also = image is null ? "" :
+                $" Android {image.AndroidVersion} ({image.TagDisplay}, {_store.SizeOf(image) / (1024.0 * 1024 * 1024):0.0} GB) is removed too, since no other instance uses it.";
+            if (!await Dialogs.ConfirmAsync(this, "Delete instance", $"Delete {instance.DisplayName} and everything in it?{also}", "Delete")) return;
+            try
+            {
+                await _store.DeleteAsync(instance);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Write($"delete failed: {ex}");
+                await Dialogs.ShowAsync(this, "Delete instance",
+                    $"Some files could not be deleted. Close anything that uses them (a file manager, another emulator) and delete again.\n\n{ex.Message}");
+            }
             Refresh();
         }, !running);
         menu.Open((Control)sender!);
@@ -211,73 +414,4 @@ public partial class MainWindow : Window
     }
 
     private void OnRefresh(object? sender, RoutedEventArgs e) => Refresh();
-
-    private async void OnEmptyAction(object? sender, RoutedEventArgs e)
-    {
-        if (!_sdk.IsInstalled)
-        {
-            var setup = SdkLocation.SetupScript();
-            if (!Terminal.RunScript(setup))
-                await Dialogs.ShowAsync(this, "Run setup", "Resit could not open a terminal. Run this in one:", $"bash \"{setup}\"");
-            return;
-        }
-        OnNewInstance(sender, e);
-    }
-
-    private async void OnEnableHypervisor(object? sender, RoutedEventArgs e)
-    {
-        if (OperatingSystem.IsWindows()) await EnableWindowsHypervisorAsync();
-        else await Dialogs.ShowAsync(this, "Hardware acceleration",
-            "The emulator needs KVM. Turn on virtualization (Intel VT-x or AMD SVM) in your BIOS, then give your " +
-            "user access to KVM with the command below. Log out and back in afterwards.",
-            "sudo usermod -aG kvm $USER");
-        await CheckAccelerationAsync();
-    }
-
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private async Task EnableWindowsHypervisorAsync()
-    {
-        // Without Hyper-V running, Google's hypervisor driver (AEHD) needs no reboot and leaves
-        // other emulators alone. With Hyper-V already on, only WHPX can work.
-        var aehd = Path.Combine(_sdk.SdkRoot, "extras", "google", "Android_Emulator_Hypervisor_Driver", "silent_install.bat");
-        bool hyperV = HostInfo.IsHypervisorRunning();
-        try
-        {
-            if (!hyperV && File.Exists(aehd))
-            {
-                if (!await Dialogs.ConfirmAsync(this, "Hardware acceleration",
-                        "Install the Android Emulator Hypervisor Driver? Windows will ask for admin rights. No reboot is needed, and other emulators keep working.",
-                        "Install")) return;
-                using var p = Process.Start(new ProcessStartInfo("cmd.exe")
-                {
-                    ArgumentList = { "/c", aehd },
-                    WorkingDirectory = Path.GetDirectoryName(aehd)!,
-                    UseShellExecute = true,
-                    Verb = "runas",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                });
-                if (p is not null) await p.WaitForExitAsync();
-            }
-            else
-            {
-                if (!await Dialogs.ConfirmAsync(this, "Hardware acceleration",
-                        "Turn on the Windows Hypervisor Platform? Windows will ask for admin rights, and you need to restart afterwards.",
-                        "Turn on")) return;
-                Process.Start(new ProcessStartInfo("powershell.exe")
-                {
-                    ArgumentList =
-                    {
-                        "-NoProfile", "-Command",
-                        "Enable-WindowsOptionalFeature -Online -FeatureName HypervisorPlatform -All -NoRestart; Read-Host 'Done. Restart Windows to finish. Press Enter to close'",
-                    },
-                    UseShellExecute = true,
-                    Verb = "runas",
-                });
-            }
-        }
-        catch (Win32Exception)
-        {
-            // The user declined the admin prompt.
-        }
-    }
 }
